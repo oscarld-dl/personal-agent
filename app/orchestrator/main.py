@@ -4,6 +4,7 @@ from pathlib import Path
 from jsonschema import validate, ValidationError
 
 from app.planner.mock_planner import MockPlanner
+from config.settings import SCHEMA_PATH, SAMPLE_GOAL_PATH
 
 
 def load_json(path: Path) -> dict:
@@ -17,13 +18,8 @@ def load_text(path: Path) -> str:
 
 
 def main() -> None:
-    root = Path(__file__).resolve().parents[2]
-
-    schema_path = root / "schemas" / "plan_schema.json"
-    goal_path = root / "tests" / "sample_goal.txt"
-
-    schema = load_json(schema_path)
-    goal = load_text(goal_path)
+    schema = load_json(SCHEMA_PATH)
+    goal = load_text(SAMPLE_GOAL_PATH)
 
     planner = MockPlanner()
     plan = planner.generate_plan(goal)
