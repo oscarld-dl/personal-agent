@@ -3,7 +3,7 @@ from pathlib import Path
 
 from jsonschema import validate, ValidationError
 
-from app.planner.mock_planner import MockPlanner
+from app.planner.factory import get_planner
 from config.settings import SCHEMA_PATH, SAMPLE_GOAL_PATH
 
 
@@ -21,7 +21,7 @@ def main() -> None:
     schema = load_json(SCHEMA_PATH)
     goal = load_text(SAMPLE_GOAL_PATH)
 
-    planner = MockPlanner()
+    planner = get_planner()
     plan = planner.generate_plan(goal)
 
     print(f"Goal received: {goal}")
