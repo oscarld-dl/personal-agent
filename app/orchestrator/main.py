@@ -1,4 +1,5 @@
 import json
+import sys
 from pathlib import Path
 
 from jsonschema import validate, ValidationError
@@ -6,7 +7,7 @@ from jsonschema import validate, ValidationError
 from app.notion.client import NotionClient
 from app.notion.service import NotionService
 from app.planner.factory import get_planner
-from config.settings import SCHEMA_PATH, SAMPLE_GOAL_PATH
+from config.settings import SAMPLE_GOAL_PATH, SCHEMA_PATH
 
 
 def load_json(path: Path) -> dict:
@@ -19,9 +20,19 @@ def load_text(path: Path) -> str:
         return f.read().strip()
 
 
+def get_goal_from_input() -> str:
+    """
+    Return the goal from the command line if provided.
+    Otherwise, fall back to the sample goal file.
+    """
+    if len(sys.argv) > 1:
+        return " ".join(sys.argv[1:]).strip()
+    return load_text(SAMPLE_GOAL_PATH)
+
+
 def main() -> None:
     schema = load_json(SCHEMA_PATH)
-    goal = load_text(SAMPLE_GOAL_PATH)
+    goal = get_goal_from_input()
 
     planner = get_planner()
     plan = planner.generate_plan(goal)
