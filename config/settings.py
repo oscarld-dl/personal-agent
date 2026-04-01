@@ -11,8 +11,9 @@ load_dotenv(ROOT_DIR / ".env")
 SCHEMA_PATH = ROOT_DIR / "schemas" / "plan_schema.json"
 SAMPLE_GOAL_PATH = ROOT_DIR / "tests" / "sample_goal.txt"
 SAMPLE_PLAN_PATH = ROOT_DIR / "tests" / "sample_plan.json"
+PLANNER_PROMPT_PATH = ROOT_DIR / "prompts" / "planner_prompt.md"
 
-PLANNER_TYPE = "mock"
+PLANNER_TYPE = "mock"  # Change to "mock" for testing without API calls
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
