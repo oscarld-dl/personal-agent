@@ -37,3 +37,5 @@ Output format:
     }
   ]
 }
+
+Return only valid JSON. Do not wrap the JSON in markdown code fences.
