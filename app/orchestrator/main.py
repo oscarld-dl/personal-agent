@@ -3,6 +3,8 @@ from pathlib import Path
 
 from jsonschema import validate, ValidationError
 
+from app.notion.client import NotionClient
+from app.notion.service import NotionService
 from app.planner.factory import get_planner
 from config.settings import SCHEMA_PATH, SAMPLE_GOAL_PATH
 
@@ -30,6 +32,11 @@ def main() -> None:
         validate(instance=plan, schema=schema)
         print("Plan is valid.")
         print(json.dumps(plan, indent=2))
+
+        notion_client = NotionClient()
+        notion_service = NotionService(notion_client)
+        notion_service.save_plan(plan)
+
     except ValidationError as e:
         print("Plan is invalid.")
         print(f"Validation error: {e.message}")
