@@ -1,0 +1,39 @@
+{
+  "goal": "Set up the first version of my Personal Agent project",
+  "project": {
+    "name": "Personal Agent MVP",
+    "priority": "high"
+  },
+  "tasks": [
+    {
+      "title": "Define MVP scope",
+      "priority": "high",
+      "estimated_effort": "1h",
+      "depends_on": []
+    },
+    {
+      "title": "Write project README",
+      "priority": "high",
+      "estimated_effort": "1h",
+      "depends_on": ["Define MVP scope"]
+    },
+    {
+      "title": "Create planner prompt",
+      "priority": "high",
+      "estimated_effort": "30m",
+      "depends_on": ["Define MVP scope"]
+    },
+    {
+      "title": "Create JSON schema for plans",
+      "priority": "high",
+      "estimated_effort": "45m",
+      "depends_on": ["Create planner prompt"]
+    },
+    {
+      "title": "Prepare Notion task database design",
+      "priority": "medium",
+      "estimated_effort": "1h",
+      "depends_on": ["Write project README"]
+    }
+  ]
+}
