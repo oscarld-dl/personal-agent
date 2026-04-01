@@ -1,9 +1,9 @@
-# app/orchestrator/main.py
-
 import json
 from pathlib import Path
 
 from jsonschema import validate, ValidationError
+
+from app.planner.mock_planner import generate_plan_from_goal
 
 
 def load_json(path: Path) -> dict:
@@ -11,18 +11,28 @@ def load_json(path: Path) -> dict:
         return json.load(f)
 
 
+def load_text(path: Path) -> str:
+    with path.open("r", encoding="utf-8") as f:
+        return f.read().strip()
+
+
 def main() -> None:
     root = Path(__file__).resolve().parents[2]
 
     schema_path = root / "schemas" / "plan_schema.json"
-    sample_path = root / "tests" / "sample_plan.json"
+    goal_path = root / "tests" / "sample_goal.txt"
 
     schema = load_json(schema_path)
-    sample_plan = load_json(sample_path)
+    goal = load_text(goal_path)
+
+    plan = generate_plan_from_goal(goal)
+
+    print(f"Goal received: {goal}")
 
     try:
-        validate(instance=sample_plan, schema=schema)
+        validate(instance=plan, schema=schema)
         print("Plan is valid.")
+        print(json.dumps(plan, indent=2))
     except ValidationError as e:
         print("Plan is invalid.")
         print(f"Validation error: {e.message}")
