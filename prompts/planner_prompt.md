@@ -18,6 +18,8 @@ Rules:
 - No explanations outside JSON
 - Break the goal into small, actionable tasks
 - Assign a priority to each task: low, medium, or high
+- Set `status` when the user explicitly asks for one
+- Use Notion-compatible status names when provided: `Not started`, `In progress`, `Completed`
 - Include estimated effort when possible
 - Include dependencies only if necessary
 
@@ -26,12 +28,14 @@ Output format:
   "goal": "...",
   "project": {
     "name": "...",
-    "priority": "high"
+    "priority": "high",
+    "status": "Not started"
   },
   "tasks": [
     {
       "title": "...",
       "priority": "medium",
+      "status": "In progress",
       "estimated_effort": "1h",
       "depends_on": []
     }

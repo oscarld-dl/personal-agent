@@ -13,6 +13,9 @@
         "priority": {
           "type": "string",
           "enum": ["low", "medium", "high"]
+        },
+        "status": {
+          "type": "string"
         }
       },
       "required": ["name", "priority"]
@@ -28,6 +31,9 @@
           "priority": {
             "type": "string",
             "enum": ["low", "medium", "high"]
+          },
+          "status": {
+            "type": "string"
           },
           "estimated_effort": {
             "type": "string"
