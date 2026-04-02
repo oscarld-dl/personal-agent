@@ -1,3 +1,7 @@
+import mimetypes
+from pathlib import Path
+from urllib.parse import urlparse
+
 import requests
 
 from config.settings import (
@@ -12,6 +16,9 @@ from config.settings import (
 class NotionClient:
     BASE_URL = "https://api.notion.com/v1"
     NOTION_VERSION = "2026-03-11"
+    FILES_PROPERTY_NAME = "Files & media"
+    TEXT_CONTENT_LIMIT = 2000
+    FILE_UPLOAD_SIZE_LIMIT_BYTES = 20 * 1024 * 1024
 
     def __init__(self) -> None:
         if not NOTION_API_KEY:
@@ -22,9 +29,14 @@ class NotionClient:
             "Content-Type": "application/json",
             "Notion-Version": self.NOTION_VERSION,
         }
+        self.upload_headers = {
+            "Authorization": f"Bearer {NOTION_API_KEY}",
+            "Notion-Version": self.NOTION_VERSION,
+        }
         self.projects_data_source_id = NOTION_PROJECTS_DATA_SOURCE_ID or NOTION_PROJECTS_DB_ID
         self.tasks_data_source_id = NOTION_TASKS_DATA_SOURCE_ID or NOTION_TASKS_DB_ID
         self._status_options_cache: dict[str, dict] = {}
+        self._data_source_cache: dict[str, dict] = {}
 
         if not self.projects_data_source_id:
             raise ValueError("NOTION_PROJECTS_DATA_SOURCE_ID or NOTION_PROJECTS_DB_ID is not set.")
@@ -160,9 +172,14 @@ class NotionClient:
     def _normalize_status_key(self, status_name: str) -> str:
         return " ".join(status_name.strip().lower().replace("_", " ").replace("-", " ").split())
 
+    def _get_data_source_schema(self, data_source_id: str) -> dict:
+        if data_source_id not in self._data_source_cache:
+            self._data_source_cache[data_source_id] = self.retrieve_data_source(data_source_id)
+        return self._data_source_cache[data_source_id]
+
     def _get_status_schema(self, data_source_id: str) -> dict:
         if data_source_id not in self._status_options_cache:
-            data_source = self.retrieve_data_source(data_source_id)
+            data_source = self._get_data_source_schema(data_source_id)
             status_property = data_source.get("properties", {}).get("Status")
 
             if not status_property or status_property.get("type") != "status":
@@ -195,8 +212,8 @@ class NotionClient:
         options_by_id = {option["id"]: option["name"] for option in options}
 
         synonym_groups = (
-            {"not started", "not started", "todo", "to do", "backlog"},
-            {"in progress", "in progress", "doing", "active"},
+            {"not started", "todo", "to do", "backlog"},
+            {"in progress", "doing", "active"},
             {"completed", "complete", "done", "finished"},
         )
 
@@ -257,6 +274,176 @@ class NotionClient:
         raise ValueError(
             f'No project page found in the Projects data source with exact title "{project_name}".'
         )
+
+    def tasks_has_files_media_property(self) -> bool:
+        properties = self._get_data_source_schema(self.tasks_data_source_id).get("properties", {})
+        files_property = properties.get(self.FILES_PROPERTY_NAME)
+        return bool(files_property and files_property.get("type") == "files")
+
+    def update_page_files_media(self, page_id: str, files: list[dict]) -> dict:
+        payload = {
+            "properties": {
+                self.FILES_PROPERTY_NAME: {
+                    "files": files
+                }
+            }
+        }
+        response = requests.patch(
+            f"{self.BASE_URL}/pages/{page_id}",
+            headers=self.headers,
+            json=payload,
+            timeout=30,
+        )
+        self._raise_for_status(response)
+        return response.json()
+
+    def append_block_children(self, page_id: str, children: list[dict]) -> dict:
+        payload = {"children": children}
+        response = requests.patch(
+            f"{self.BASE_URL}/blocks/{page_id}/children",
+            headers=self.headers,
+            json=payload,
+            timeout=30,
+        )
+        self._raise_for_status(response)
+        return response.json()
+
+    def append_task_context(
+        self,
+        page_id: str,
+        notes: str = "",
+        attachment_urls: list[str] | None = None,
+        attachment_paths: list[str] | None = None,
+    ) -> bool:
+        children = self.build_task_context_blocks(notes, attachment_urls or [], attachment_paths or [])
+        if not children:
+            return False
+
+        self.append_block_children(page_id, children)
+        return True
+
+    def build_external_file_object(self, url: str) -> dict:
+        parsed = urlparse(url)
+        filename = Path(parsed.path).name or parsed.netloc or "External attachment"
+        return {
+            "name": filename,
+            "type": "external",
+            "external": {
+                "url": url
+            },
+        }
+
+    def upload_local_file(self, file_path: str) -> dict | None:
+        path = Path(file_path).expanduser()
+
+        if not path.exists():
+            print(f"[Notion Warning] Local attachment path not found: {file_path}")
+            return None
+        if not path.is_file():
+            print(f"[Notion Warning] Local attachment path is not a file: {file_path}")
+            return None
+        if path.stat().st_size > self.FILE_UPLOAD_SIZE_LIMIT_BYTES:
+            print(
+                f"[Notion Warning] Local attachment exceeds {self.FILE_UPLOAD_SIZE_LIMIT_BYTES} bytes: "
+                f"{file_path}"
+            )
+            return None
+
+        create_response = requests.post(
+            f"{self.BASE_URL}/file_uploads",
+            headers=self.headers,
+            json={},
+            timeout=30,
+        )
+        self._raise_for_status(create_response)
+        upload = create_response.json()
+        upload_id = upload["id"]
+
+        mime_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        with path.open("rb") as file_handle:
+            send_response = requests.post(
+                f"{self.BASE_URL}/file_uploads/{upload_id}/send",
+                headers=self.upload_headers,
+                data={"filename": path.name},
+                files={"file": (path.name, file_handle, mime_type)},
+                timeout=120,
+            )
+        self._raise_for_status(send_response)
+
+        return {
+            "name": path.name,
+            "type": "file_upload",
+            "file_upload": {
+                "id": upload_id
+            },
+        }
+
+    def build_task_context_blocks(
+        self,
+        notes: str,
+        attachment_urls: list[str],
+        attachment_paths: list[str],
+    ) -> list[dict]:
+        children: list[dict] = []
+
+        if notes:
+            children.append(self._heading_block("Task Notes"))
+            children.extend(self._paragraph_blocks(notes))
+
+        if attachment_urls or attachment_paths:
+            heading = "Attachments" if notes else "Task Attachments"
+            children.append(self._heading_block(heading))
+
+        for url in attachment_urls:
+            children.extend(self._paragraph_blocks(f"URL: {url}"))
+
+        for path in attachment_paths:
+            children.extend(self._paragraph_blocks(f"Local file: {path}"))
+
+        return children
+
+    def _heading_block(self, text: str) -> dict:
+        return {
+            "object": "block",
+            "type": "heading_2",
+            "heading_2": {
+                "rich_text": [self._rich_text(text)]
+            },
+        }
+
+    def _paragraph_blocks(self, text: str) -> list[dict]:
+        blocks: list[dict] = []
+        for line in text.splitlines() or [text]:
+            clean_line = line.strip()
+            if not clean_line:
+                continue
+
+            for chunk in self._chunk_text(clean_line):
+                blocks.append(
+                    {
+                        "object": "block",
+                        "type": "paragraph",
+                        "paragraph": {
+                            "rich_text": [self._rich_text(chunk)]
+                        },
+                    }
+                )
+
+        return blocks
+
+    def _chunk_text(self, text: str) -> list[str]:
+        return [
+            text[index:index + self.TEXT_CONTENT_LIMIT]
+            for index in range(0, len(text), self.TEXT_CONTENT_LIMIT)
+        ]
+
+    def _rich_text(self, text: str) -> dict:
+        return {
+            "type": "text",
+            "text": {
+                "content": text
+            },
+        }
 
     def retrieve_database(self, database_id: str) -> dict:
         response = requests.get(

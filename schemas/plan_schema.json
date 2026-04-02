@@ -38,6 +38,21 @@
           "estimated_effort": {
             "type": "string"
           },
+          "Attachment URLs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "Attachment Paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "Notes": {
+            "type": "string"
+          },
           "depends_on": {
             "type": "array",
             "items": {

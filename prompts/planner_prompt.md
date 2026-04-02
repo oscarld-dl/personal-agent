@@ -22,6 +22,10 @@ Rules:
 - Use Notion-compatible status names when provided: `Not started`, `In progress`, `Completed`
 - Include estimated effort when possible
 - Include dependencies only if necessary
+- If the user provides attachment URLs, local file paths, or extra implementation notes for a task, include them as optional task fields:
+  - `Attachment URLs`: array of strings
+  - `Attachment Paths`: array of strings
+  - `Notes`: string
 
 Output format:
 {
@@ -37,6 +41,9 @@ Output format:
       "priority": "medium",
       "status": "In progress",
       "estimated_effort": "1h",
+      "Attachment URLs": ["https://example.com/spec.pdf"],
+      "Attachment Paths": ["/mnt/c/Users/example/Downloads/spec.pdf"],
+      "Notes": "Use this file as context for the task.",
       "depends_on": []
     }
   ]

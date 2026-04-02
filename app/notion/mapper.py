@@ -41,4 +41,13 @@ def map_task_to_notion(
     if project_page_id:
         notion_task["Projects"] = [{"id": project_page_id}]
 
+    if task.get("Attachment URLs"):
+        notion_task["Attachment URLs"] = task["Attachment URLs"]
+
+    if task.get("Attachment Paths"):
+        notion_task["Attachment Paths"] = task["Attachment Paths"]
+
+    if task.get("Notes"):
+        notion_task["Notes"] = task["Notes"]
+
     return notion_task
