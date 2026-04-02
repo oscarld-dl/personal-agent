@@ -10,6 +10,8 @@ python -m app.orchestrator.main "Attach the PDF /path/to/file.pdf to the specifi
 
 2. Not only create new tasks, but also modify existing ones through the API, including changing an existing task's status to done.
 
+3. Make the agent able to generate a daily report summarizing every task I have touched across any project, so I can keep track of everything I did during a working day.
+
 A personal AI productivity system that turns goals into structured plans, validates them, and stores them in Notion.
 
 ## Current Status
