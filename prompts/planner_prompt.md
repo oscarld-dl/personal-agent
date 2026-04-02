@@ -18,6 +18,8 @@ Rules:
 - No explanations outside JSON
 - Break the goal into small, actionable tasks
 - Assign a priority to each task: low, medium, or high
+- If the user explicitly specifies a priority for a task, preserve that exact priority
+- If the user does not specify a priority for a task, default that task to `medium`
 - Set `status` when the user explicitly asks for one
 - Use Notion-compatible status names when provided: `Not started`, `In progress`, `Completed`
 - Include estimated effort when possible

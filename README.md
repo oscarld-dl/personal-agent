@@ -8,6 +8,8 @@
 python -m app.orchestrator.main "Attach the PDF /path/to/file.pdf to the specific task X and update its notes with Y"
 ```
 
+2. Not only create new tasks, but also modify existing ones through the API, including changing an existing task's status to done.
+
 A personal AI productivity system that turns goals into structured plans, validates them, and stores them in Notion.
 
 ## Current Status
