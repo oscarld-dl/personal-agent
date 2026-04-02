@@ -12,8 +12,11 @@ class NotionService:
         tasks = plan["tasks"]
 
         mapped_project = map_project_to_notion(project, goal)
-        self.client.create_project(mapped_project)
+        created_project = self.client.create_project(mapped_project)
+        print(f"[Notion] Project page URL: {created_project.get('url')}")
+        print(f"[Notion] Full project response: {created_project}")
 
         for task in tasks:
             mapped_task = map_task_to_notion(task, project["name"])
-            self.client.create_task(mapped_task)
+            created_task = self.client.create_task(mapped_task)
+            print(f"[Notion] Task page URL: {created_task.get('url')}")

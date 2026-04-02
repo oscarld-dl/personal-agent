@@ -9,3 +9,7 @@ def get_planner():
     if PLANNER_TYPE == "openai":
         return OpenAIPlanner()
     raise ValueError(f"Unsupported planner type: {PLANNER_TYPE}")
+
+
+def get_fallback_planner():
+    return MockPlanner()
